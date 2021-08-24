@@ -440,7 +440,6 @@ while [ $i -le $max_try ]; do
 			echo "完成"
 		done
 		rm -rf opt/docker && ln -sf /opt/docker/ opt/docker
-		rm -rf usr/bin/AdGuardHome && ln -sf /opt/AdGuardHome usr/bin/AdGuardHome
 		echo "复制完成"
 		
 		echo -n "编辑配置文件 ... "
@@ -484,7 +483,7 @@ config mount
 	option enabled '1'
 	option enabled_fsck '0'
         option fstype 'vfat'
-		
+
 EOF
 
                 echo -n "创建初始 etc 快照 -> .snapshots/etc-000"
@@ -549,7 +548,7 @@ case $TARGET_SHARED_FSTYPE in
 	     mount -t ext4 /dev/${EMMC_NAME}p3 /mnt/${EMMC_NAME}p3
 	     ;;
 esac
-mkdir -p /opt/docker /opt/AdGuardHome
+mkdir -p /opt/docker
 echo "完成"
 echo
 
