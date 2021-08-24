@@ -3,10 +3,8 @@
 BLANK1=68
 BOOT=512
 BLANK2=184
-ROOT1=720
+ROOT=720
 BLANK3=0
-ROOT2=720
-BLANK4=0
 
 TARGET_SHARED_FSTYPE=f2fs
 BACKUP_IMG="/root/bootloader_backup.img"
@@ -204,13 +202,10 @@ start1=$(( BLANK1 * 2048 ))
 end1=$(( start1 + (BOOT * 2048) - 1 ))
 
 start2=$(( (BLANK2 * 2048) + end1 + 1 ))
-end2=$(( start2 + (ROOT1 * 2048) -1 ))
+end2=$(( start2 + (ROOT * 2048) -1 ))
 
 start3=$(( (BLANK3 * 2048) + end2 + 1 ))
-end3=$(( start3 + (ROOT2 * 2048) -1 ))
-
-start4=$(( (BLANK4 * 2048) + end3 + 1 ))
-end4=$(( DST_TOTAL_MB * 2048 -1 ))
+end3=$(( DST_TOTAL_MB * 2048 -1 ))
 
 cat >> /tmp/fdisk.script <<EOF
 n
@@ -225,13 +220,8 @@ $start2
 $end2
 n
 p
-3
 $start3
 $end3
-n
-p
-$start4
-$end4
 t
 1
 c
@@ -240,9 +230,6 @@ t
 83
 t
 3
-83
-t
-4
 83
 w
 EOF
@@ -264,9 +251,6 @@ seek=$((start2 / 2048))
 dd if=/dev/zero of=/dev/${EMMC_NAME} bs=1M count=1 seek=$seek conv=fsync
 
 seek=$((start3 / 2048))
-dd if=/dev/zero of=/dev/${EMMC_NAME} bs=1M count=1 seek=$seek conv=fsync
-
-seek=$((start4 / 2048))
 dd if=/dev/zero of=/dev/${EMMC_NAME} bs=1M count=1 seek=$seek conv=fsync
 
 if [ "$MAINLINE_UBOOT" != "" ];then
@@ -340,19 +324,12 @@ mkdir -p /mnt/${EMMC_NAME}p1
 sleep 2
 umount -f /mnt/${EMMC_NAME}p1 2>/dev/null
 
-echo "创建 rootfs1 文件系统 ... "
-ROOTFS1_UUID=$(/usr/bin/uuidgen)
-mkfs.btrfs -f -U ${ROOTFS1_UUID} -L EMMC_ROOTFS1 -m single /dev/${EMMC_NAME}p2
+echo "创建 rootfs 文件系统 ... "
+ROOTFS_UUID=$(/usr/bin/uuidgen)
+mkfs.btrfs -f -U ${ROOTFS_UUID} -L EMMC_ROOTFS -m single /dev/${EMMC_NAME}p2
 mkdir -p /mnt/${EMMC_NAME}p2
 sleep 2
 umount -f /mnt/${EMMC_NAME}p2 2>/dev/null
-
-echo "创建 rootfs2 文件系统 ... "
-ROOTFS2_UUID=$(/usr/bin/uuidgen)
-mkfs.btrfs -f -U ${ROOTFS2_UUID} -L EMMC_ROOTFS2 -m single /dev/${EMMC_NAME}p3
-mkdir -p /mnt/${EMMC_NAME}p3
-sleep 2
-umount -f /mnt/${EMMC_NAME}p3 2>/dev/null
 
 # 写入 boot 
 #if [ $K510 -eq 0 ] || [ $FLASH_MAINLINE_UBOOT -eq 1 ];then  # kernel version < 5.10 or flash_mainline_uboot = 1
@@ -389,7 +366,7 @@ INITRD=/uInitrd
 
 FDT=/dtb/amlogic/${FDTFILE}
 
-APPEND=root=UUID=${ROOTFS1_UUID} rootfstype=btrfs rootflags=compress=zstd console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
+APPEND=root=UUID=${ROOTFS_UUID} rootfstype=btrfs rootflags=compress=zstd console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
 EOF
 
 			rm -f s905_autoscript* aml_autoscript*
@@ -421,7 +398,7 @@ INITRD=/uInitrd
 
 FDT=/dtb/amlogic/${FDTFILE}
 
-APPEND=root=UUID=${ROOTFS1_UUID} rootfstype=btrfs rootflags=compress=zstd console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
+APPEND=root=UUID=${ROOTFS_UUID} rootfstype=btrfs rootflags=compress=zstd console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
 EOF
 	sync
 	echo "完成"
@@ -473,7 +450,7 @@ while [ $i -le $max_try ]; do
 		ln -sf ../init.d/dockerd S99dockerd
 		cd /mnt/${EMMC_NAME}p2/etc
 		cat > fstab <<EOF
-UUID=${ROOTFS1_UUID} / btrfs compress=zstd 0 1
+UUID=${ROOTFS_UUID} / btrfs compress=zstd 0 1
 LABEL=${BOOT_LABEL} /boot vfat defaults 0 2
 #tmpfs /tmp tmpfs defaults,nosuid 0 0
 EOF
@@ -495,7 +472,7 @@ config global
 
 config mount
 	option target '/overlay'
-	option uuid '${ROOTFS1_UUID}'
+	option uuid '${ROOTFS_UUID}'
 	option enabled '1'
 	option enabled_fsck '1'
         option fstype 'btrfs'
@@ -557,22 +534,22 @@ case $sel in
 	*) TARGET_SHARED_FSTYPE=ext4;;
 esac
 
-mkdir -p /mnt/${EMMC_NAME}p4
+mkdir -p /mnt/${EMMC_NAME}p3
 case $TARGET_SHARED_FSTYPE in
-	xfs) mkfs.xfs -f -L EMMC_SHARED /dev/${EMMC_NAME}p4
-	     mount -t xfs /dev/${EMMC_NAME}p4 /mnt/${EMMC_NAME}p4
+	xfs) mkfs.xfs -f -L EMMC_SHARED /dev/${EMMC_NAME}p3
+	     mount -t xfs /dev/${EMMC_NAME}p3 /mnt/${EMMC_NAME}p3
 	     ;;
-      btrfs) mkfs.btrfs -f -L EMMC_SHARED -m single /dev/${EMMC_NAME}p4
-	     mount -t btrfs /dev/${EMMC_NAME}p4 /mnt/${EMMC_NAME}p4
+      btrfs) mkfs.btrfs -f -L EMMC_SHARED -m single /dev/${EMMC_NAME}p3
+	     mount -t btrfs /dev/${EMMC_NAME}p3 /mnt/${EMMC_NAME}p3
 	     ;;
-       f2fs) mkfs.f2fs -f -l EMMC_SHARED /dev/${EMMC_NAME}p4
-	     mount -t f2fs /dev/${EMMC_NAME}p4 /mnt/${EMMC_NAME}p4
+       f2fs) mkfs.f2fs -f -l EMMC_SHARED /dev/${EMMC_NAME}p3
+	     mount -t f2fs /dev/${EMMC_NAME}p3 /mnt/${EMMC_NAME}p3
 	     ;;
-	  *) mkfs.ext4 -F -L EMMC_SHARED  /dev/${EMMC_NAME}p4
-	     mount -t ext4 /dev/${EMMC_NAME}p4 /mnt/${EMMC_NAME}p4
+	  *) mkfs.ext4 -F -L EMMC_SHARED  /dev/${EMMC_NAME}p3
+	     mount -t ext4 /dev/${EMMC_NAME}p3 /mnt/${EMMC_NAME}p3
 	     ;;
 esac
-mkdir -p /mnt/${EMMC_NAME}p4/docker /mnt/${EMMC_NAME}p4/AdGuardHome
+mkdir -p /opt/docker /opt/AdGuardHome
 echo "完成"
 echo
 
