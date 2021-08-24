@@ -439,8 +439,8 @@ while [ $i -le $max_try ]; do
 			sync
 			echo "完成"
 		done
-		rm -rf opt/docker && ln -sf /mnt/${EMMC_NAME}p4/docker/ opt/docker
-		rm -rf usr/bin/AdGuardHome && ln -sf /mnt/${EMMC_NAME}p4/AdGuardHome usr/bin/AdGuardHome
+		rm -rf opt/docker && ln -sf /opt/docker/ opt/docker
+		rm -rf usr/bin/AdGuardHome && ln -sf /opt/AdGuardHome usr/bin/AdGuardHome
 		echo "复制完成"
 		
 		echo -n "编辑配置文件 ... "
