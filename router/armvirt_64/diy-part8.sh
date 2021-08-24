@@ -31,7 +31,7 @@ sed -i 's/192.168.1.1/192.168.3.88/g' package/base-files/files/bin/config_genera
 # ------------------------------- Other started -------------------------------
 #
 # Add luci-app-adguardhome
-svn co https://github.com/rufengsuixing/luci-app-adguardhome/trunk package/luci-app-adguardhome
+# svn co https://github.com/rufengsuixing/luci-app-adguardhome/trunk package/luci-app-adguardhome
 
 # Add OpenAppFilter
 # svn co https://github.com/destan19/OpenAppFilter/trunk package/OpenAppFilter
