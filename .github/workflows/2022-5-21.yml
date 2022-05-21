@@ -6,7 +6,7 @@
 # Source code repository: https://github.com/coolsnowwolf/lede / Branch: master
 #========================================================================================================================
 
-name: Build OpenWrt for N1-zy6
+name: Build OpenWrt for N1-zy6 2022-5-21
 
 on:
   repository_dispatch:
