@@ -140,7 +140,7 @@ jobs:
 
     - name: Package Armvirt as OpenWrt
       if: steps.compile.outputs.status == 'success' && !cancelled()
-      uses: cocokfeng/flippy-openwrt-actions@main
+      uses: kittaakos/flippy-openwrt-actions@main
       env:
         OPENWRT_ARMVIRT: openwrt/bin/targets/*/*/*.tar.gz
 
